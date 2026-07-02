@@ -1,0 +1,38 @@
+# The directory Mix will write compiled artifacts to.
+/_build/
+
+# If you run "mix test --cover", coverage assets end up here.
+/cover/
+
+# The directory Mix downloads your dependencies sources to.
+/deps/
+
+# Where third-party dependencies like ExDoc output generated docs.
+/doc/
+
+# Temporary files, for example, from tests.
+/tmp/
+
+# If the VM crashes, it generates a dump, let's ignore it too.
+erl_crash.dump
+
+# Ignore archive artifacts (built via "mix archive.build").
+*.ez
+
+# Ignore package tarball (built via "mix hex.build").
+mutare_phoenix_live_view-*.tar
+
+# Example projects build their own artifacts.
+/examples/*/_build/
+/examples/*/deps/
+/examples/*/cover/
+
+# Dialyzer PLT files (regenerated from deps; cache the directory in CI instead).
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
+
+# ElixirLS / language-server caches.
+/.elixir_ls/
+/.lexical/
+
+.claude/settings.local.json
