@@ -22,7 +22,7 @@ defmodule MutarePhoenixLiveView.MixProject do
   end
 
   def application do
-    [extra_applications: [:logger]]
+    [extra_applications: []]
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
@@ -69,6 +69,7 @@ defmodule MutarePhoenixLiveView.MixProject do
       main: "readme",
       extras: [
         "README.md": [title: "Overview"],
+        "CHANGELOG.md": [title: "Changelog"],
         LICENSE: [title: "License"]
       ],
       source_ref: "v#{@version}",
@@ -84,7 +85,7 @@ defmodule MutarePhoenixLiveView.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/foxbenjaminfox/mutare_phoenix_live_view"},
-      files: ~w(lib mix.exs README.md LICENSE .formatter.exs)
+      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
     ]
   end
 end

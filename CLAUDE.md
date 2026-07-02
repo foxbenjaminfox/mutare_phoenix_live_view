@@ -13,7 +13,7 @@ Read `README.md` first — it documents each family, the mutation it makes, and 
 ```sh
 mix deps.get                       # fetch deps (mutare + mutare_phoenix are local path deps)
 mix compile
-mix test                           # full suite (74 tests + 1 doctest, all async)
+mix test                           # full suite (77 tests + 1 doctest, all async)
 mix test test/mutare/phoenix/live_view/navigation_test.exs        # one file
 mix test test/mutare/phoenix/live_view/navigation_test.exs:21     # one test by line
 mix check                          # alias: `format --check-formatted` then `credo` then `dialyzer`
