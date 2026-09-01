@@ -41,8 +41,11 @@ defmodule Phoenix.LiveView do
   def push_event(socket, _event, _payload), do: socket
   def push_event(socket, _event, _payload, _opts), do: socket
 
-  # Stream surface (`:lv_stream`). `stream_insert` has the optional `opts` arg (arity 3 *and*
-  # 4); `stream_delete` is arity 3 only — the asymmetry `:lv_stream`'s arity gate guards.
+  # Stream surface (`:lv_stream`). `stream` and `stream_insert` have the optional `opts` arg
+  # (arity 3 *and* 4); `stream_delete` is arity 3 only — the asymmetry `:lv_stream`'s arity
+  # gate guards.
+  def stream(socket, _name, _items), do: socket
+  def stream(socket, _name, _items, _opts), do: socket
   def stream_insert(socket, _name, _item), do: socket
   def stream_insert(socket, _name, _item, _opts), do: socket
   def stream_delete(socket, _name, _item), do: socket
@@ -55,6 +58,11 @@ defmodule Phoenix.LiveView do
   def send_update(_pid, _module, _assigns), do: :ok
   def send_update_after(_module, _assigns, _time), do: :ok
   def send_update_after(_pid, _module, _assigns, _time), do: :ok
+
+  # Lifecycle-hook surface (`:lv_hook`). `attach_hook/4` and `detach_hook/3` — the real (only)
+  # arities, both socket-in socket-out.
+  def attach_hook(socket, _name, _stage, _fun), do: socket
+  def detach_hook(socket, _name, _stage), do: socket
 end
 
 # A matching stand-in for `Phoenix.LiveComponent`, the second behaviour `:lv_reply` gates on.

@@ -14,21 +14,29 @@ It **builds on** [`mutare_phoenix`](https://hex.pm/packages/mutare_phoenix) (the
 families) the way `phoenix_live_view` builds on `phoenix`: it depends on it, so those families
 are on your code path too, ready to compose.
 
-## The five families
+## The six families
 
-`Mutare.Phoenix.LiveView.all/0` returns five mutator families:
+`Mutare.Phoenix.LiveView.all/0` returns six mutator families:
 
 | Family | Name | Mutation | The gap a survivor exposes |
 | --- | --- | --- | --- |
 | `Mutare.Phoenix.LiveView.Navigation` | `:lv_nav` | swaps `push_navigate` ↔ `push_patch` | no test pins *how* navigation happened (remount vs in-process patch) — `assert_redirect` vs `assert_patch` |
 | `Mutare.Phoenix.LiveView.Reply` | `:lv_reply` | drops a callback's optional trailing tuple element (`{:reply, payload, socket}` → `{:noreply, socket}`, `{:ok, socket, opts}` → `{:ok, socket}`) | no test checks the JS-hook reply payload or the `mount` option. Fires in `@behaviour Phoenix.LiveView` / `Phoenix.LiveComponent` modules |
-| `Mutare.Phoenix.LiveView.Stream` | `:lv_stream` | swaps `stream_insert` ↔ `stream_delete` (the arity-3 form both share) | no test asserts the stream's *contents* after the event |
+| `Mutare.Phoenix.LiveView.Stream` | `:lv_stream` | swaps `stream_insert` ↔ `stream_delete` (`swap`); swaps `at: 0 ↔ at: -1` on `stream_insert/4` (`at` — prepend vs append); drops the `limit:` entry of `stream/4` / `stream_insert/4` (`limit` — the unbounded stream) | no test asserts the stream's *contents*, the inserted item's *position*, or what falls off past the limit |
 | `Mutare.Phoenix.LiveView.Event` | `:lv_event` | removes `push_event/3,4` | no test asserts the event reaches the client — `assert_push_event` |
-| `Mutare.Phoenix.LiveView.SendUpdate` | `:lv_send_update` | removes `send_update/2,3` / `send_update_after/3,4` (collapses the call to a faithful stand-in — `:ok`, or a fresh `make_ref()` for `_after`'s timer ref) | no test asserts a child `LiveComponent` was told to re-render with new assigns — the server→component sibling of `:lv_event`'s dropped client push |
+| `Mutare.Phoenix.LiveView.SendUpdate` | `:lv_send_update` | removes `send_update/2,3` / `send_update_after/3,4` (`remove` — collapses to a faithful stand-in: `:ok`, or a fresh `make_ref()`); turns `send_update_after/3,4` into an *immediate* `send_update` that still yields a ref (`immediate` — the delay deleted) | no test asserts the child update happens — or that it is *deferred* |
+| `Mutare.Phoenix.LiveView.Hook` | `:lv_hook` | removes `attach_hook/4` (`attach` — the hook never runs) and `detach_hook/3` (`detach` — the hook keeps running), collapsing to the socket | no test depends on the lifecycle hook's attachment or detachment |
 
 Each family matches its call written directly (`Phoenix.LiveView.push_navigate(...)`), aliased,
 or bare-imported (`push_navigate(...)`, the form `use MyAppWeb, :live_view` produces). Silence a
-site with `# mutare:ignore[lv_nav]` (and likewise per family).
+site with `# mutare:ignore[lv_nav]` (and likewise per family); the multi-kind families declare
+variant labels — the ones in parentheses above — so `# mutare:ignore[lv_stream:limit]` or
+`# mutare:ignore[lv_send_update:immediate]` suppresses one kind without silencing the rest.
+
+Two positions are additionally *pinned* against Mutare's built-in value families:
+`send_update_after`'s delay (the `immediate` mutant owns the timing question, so core's
+near-unkillable `1000 → 1001` mutants are skipped there) and a hook's name/stage atoms (a
+renamed hook is near-equivalent; a mutated stage just crashes).
 
 The auth-hook `:cont`/`:halt` decision (`on_mount`/`attach_hook`) is **not** in this package —
 it is covered by Mutare's built-in `:convention` family (on by default), which flips the atom

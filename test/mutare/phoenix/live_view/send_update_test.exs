@@ -1,11 +1,12 @@
 defmodule Mutare.Phoenix.LiveView.SendUpdateTest do
   @moduledoc """
-  `:lv_send_update` — removes a `Phoenix.LiveView` component-update call
-  (`send_update/2,3`, `send_update_after/3,4`), the `LiveComponent` sibling of `:lv_event`'s
-  dropped client push. Neither call returns the socket, so removal collapses to a happy-path
-  return — `send_update` to the stand-in `:ok`, `send_update_after` to a fresh
-  `:erlang.make_ref()`. Matches direct, aliased, and bare-imported (`use`-style) forms; the
-  never-idiomatic piped form is left alone.
+  `:lv_send_update` — two variant-labelled kinds on the `Phoenix.LiveView` component-update
+  calls (the `LiveComponent` sibling of `:lv_event`'s dropped client push). `remove` drops the
+  call: neither returns the socket, so it collapses to a happy-path return — `send_update/2,3`
+  to the stand-in `:ok`, `send_update_after/3,4` to a fresh `:erlang.make_ref()`. `immediate`
+  keeps the update but drops `send_update_after`'s delay — a `send_update` now, followed by a
+  fresh ref so the expression keeps the documented `reference()` type. Matches direct, aliased,
+  and bare-imported (`use`-style) forms; the never-idiomatic piped form is left alone.
   """
   use ExUnit.Case, async: true
 
@@ -47,13 +48,93 @@ defmodule Mutare.Phoenix.LiveView.SendUpdateTest do
     end
 
     test "send_update_after/3 collapses to a fresh :erlang.make_ref() (its real return)" do
-      assert su_diffs(live("  def go(s), do: send_update_after(Cart, [id: 1], 1000)")) ==
-               [{"send_update_after(Cart, [id: 1], 1000)", ":erlang.make_ref()"}]
+      assert {"send_update_after(Cart, [id: 1], 1000)", ":erlang.make_ref()"} in su_diffs(
+               live("  def go(s), do: send_update_after(Cart, [id: 1], 1000)")
+             )
     end
 
     test "the arity-4 pid form send_update_after collapses to a fresh reference" do
-      assert su_diffs(live("  def go(pid), do: send_update_after(pid, Cart, [id: 1], 1000)")) ==
-               [{"send_update_after(pid, Cart, [id: 1], 1000)", ":erlang.make_ref()"}]
+      assert {"send_update_after(pid, Cart, [id: 1], 1000)", ":erlang.make_ref()"} in su_diffs(
+               live("  def go(pid), do: send_update_after(pid, Cart, [id: 1], 1000)")
+             )
+    end
+  end
+
+  describe "the immediate kind (send_update_after drops its delay)" do
+    test "send_update_after/3 also becomes an immediate send_update plus the ref" do
+      assert su_diffs(live("  def go(s), do: send_update_after(Cart, [id: 1], 1000)")) ==
+               [
+                 {"send_update_after(Cart, [id: 1], 1000)", ":erlang.make_ref()"},
+                 {"send_update_after(Cart, [id: 1], 1000)",
+                  "send_update(Cart, id: 1)\n:erlang.make_ref()"}
+               ]
+    end
+
+    test "the arity-4 pid form keeps the pid on the immediate send_update/3" do
+      assert {"send_update_after(pid, Cart, [id: 1], 1000)",
+              "send_update(pid, Cart, id: 1)\n:erlang.make_ref()"} in su_diffs(
+               live("  def go(pid), do: send_update_after(pid, Cart, [id: 1], 1000)")
+             )
+    end
+
+    test "a qualified call keeps its qualifier on the immediate sibling" do
+      source =
+        "defmodule L do\n  def go(s), do: Phoenix.LiveView.send_update_after(Cart, [id: 1], 5)\nend\n"
+
+      assert {"Phoenix.LiveView.send_update_after(Cart, [id: 1], 5)",
+              "Phoenix.LiveView.send_update(Cart, id: 1)\n:erlang.make_ref()"} in su_diffs(source)
+    end
+
+    test "an aliased call keeps its alias on the immediate sibling" do
+      source = """
+      defmodule L do
+        alias Phoenix.LiveView, as: LV
+        def go(s), do: LV.send_update_after(Cart, [id: 1], 5)
+      end
+      """
+
+      assert {"LV.send_update_after(Cart, [id: 1], 5)",
+              "LV.send_update(Cart, id: 1)\n:erlang.make_ref()"} in su_diffs(source)
+    end
+  end
+
+  describe "the delay is a marked :timeout position" do
+    test "core's IntegerLiteral leaves the delay literal alone when this family is enabled" do
+      source = live("  def go(s), do: send_update_after(Cart, [id: 1], 1000)")
+      all = diffs(source, [Mutare.Mutators.IntegerLiteral, SendUpdate])
+
+      # The `immediate` mutant owns the timing question; the `1000 → 1001` off-by-one would be
+      # the near-unkillable duration noise core's own timeout table exists to avoid. The
+      # assigns' `id: 1` literal is ordinary data and still mutates.
+      refute Enum.any?(all, fn {family, original, _mutated} ->
+               family == :integer and original == "1000"
+             end)
+
+      assert {:integer, "1", "2"} in all
+    end
+
+    test "control: without this family the delay literal is mutated" do
+      source = live("  def go(s), do: send_update_after(Cart, [id: 1], 1000)")
+
+      assert {:integer, "1000", "1001"} in diffs(source, [Mutare.Mutators.IntegerLiteral])
+    end
+  end
+
+  describe "variant labels (# mutare:ignore[lv_send_update:<kind>])" do
+    test "the declared vocabulary" do
+      assert SendUpdate.variants() == ["remove", "immediate"]
+    end
+
+    test "a qualified directive suppresses one kind and leaves the other live" do
+      source =
+        live(
+          "  def go(s), do: send_update_after(Cart, [id: 1], 1000) # mutare:ignore[lv_send_update:immediate]"
+        )
+
+      result = Mutare.transform_string(source, mutators: [SendUpdate])
+
+      assert Enum.map(result.mutants, &{&1.variant, &1.ignored}) ==
+               [{["remove"], false}, {["immediate"], true}]
     end
   end
 
@@ -112,9 +193,12 @@ defmodule Mutare.Phoenix.LiveView.SendUpdateTest do
       assert node_mutations("Phoenix.LiveView.send_update(Cart, id: 1)", SendUpdate) == [":ok"]
     end
 
-    test "qualified send_update_after collapses to :erlang.make_ref()" do
+    test "qualified send_update_after yields the removal and the immediate sibling" do
       assert node_mutations("Phoenix.LiveView.send_update_after(Cart, [id: 1], 1)", SendUpdate) ==
-               [":erlang.make_ref()"]
+               [
+                 ":erlang.make_ref()",
+                 "Phoenix.LiveView.send_update(Cart, id: 1)\n:erlang.make_ref()"
+               ]
     end
 
     test "a piped stage node yields nothing (piped is left alone)" do
@@ -136,7 +220,20 @@ defmodule Mutare.Phoenix.LiveView.SendUpdateTest do
         send_update(Cart, id: "cart", count: 3)
         send_update(pid, Cart, id: "cart")
         send_update_after(Cart, [id: "cart"], 1_000)
+        send_update_after(pid, Cart, [id: "cart"], 500)
         :ok
+      end
+
+      def capture do
+        ref = send_update_after(Cart, [id: "cart"], 1_000)
+        Process.cancel_timer(ref)
+      end
+
+      # Awkward value positions: the two-expression `immediate` block must stay compile-safe
+      # even as a pipe head or a call argument.
+      def awkward(m) do
+        send_update_after(Cart, [id: "cart"], 100) |> then(&Map.put(m, :ref, &1))
+        Map.put(m, :ref, send_update_after(Cart, [id: "cart"], 100))
       end
     end
     """

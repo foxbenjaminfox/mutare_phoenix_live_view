@@ -1,8 +1,8 @@
 defmodule Mutare.Phoenix.LiveViewTest do
   @moduledoc """
-  The package's preset (`all/0`, the five LiveView families) and a cross-family integration
+  The package's preset (`all/0`, the six LiveView families) and a cross-family integration
   check: a realistic LiveView + auth-hook + controller surface mutated by every family — the
-  five LiveView families, the three base families it is composed with, and the built-in
+  six LiveView families, the three base families it is composed with, and the built-in
   `:convention` that covers the auth `:cont`/`:halt` swap — recording the expected names and
   compiling as one metamutant.
   """
@@ -15,14 +15,15 @@ defmodule Mutare.Phoenix.LiveViewTest do
   doctest Mutare.Phoenix.LiveView
 
   describe "preset" do
-    test "all/0 is the five LiveView families" do
+    test "all/0 is the six LiveView families" do
       assert LV.all() ==
                [
                  Mutare.Phoenix.LiveView.Navigation,
                  Mutare.Phoenix.LiveView.Reply,
                  Mutare.Phoenix.LiveView.Stream,
                  Mutare.Phoenix.LiveView.Event,
-                 Mutare.Phoenix.LiveView.SendUpdate
+                 Mutare.Phoenix.LiveView.SendUpdate,
+                 Mutare.Phoenix.LiveView.Hook
                ]
     end
 
@@ -32,32 +33,24 @@ defmodule Mutare.Phoenix.LiveViewTest do
       end
     end
 
-    test "all/0 resolves via Mutare.Mutators.resolve/1 to the five recorded family names" do
+    test "all/0 resolves via Mutare.Mutators.resolve/1 to the six recorded family names" do
       assert Enum.map(Mutare.Mutators.resolve(LV.all()), & &1.name) ==
-               [:lv_nav, :lv_reply, :lv_stream, :lv_event, :lv_send_update]
+               [:lv_nav, :lv_reply, :lv_stream, :lv_event, :lv_send_update, :lv_hook]
     end
 
     test "composed with the base preset, it splices into a :mutators list and resolves in order" do
       # `:convention` is the built-in family this file leans on elsewhere (the auth
       # `:cont`/`:halt` swap), so it stands in for the `:builtins` group the moduledoc's
-      # `.mutare.exs` examples splice these presets alongside.
+      # `.mutare.exs` examples splice these presets alongside. The base package's family list
+      # is read off its own preset rather than repeated here — this test pins the *splicing*
+      # (everything resolves, in order), not `mutare_phoenix`'s registry.
       specs = Mutare.Mutators.resolve([:convention] ++ Mutare.Phoenix.all() ++ LV.all())
+      base_names = Enum.map(Mutare.Mutators.resolve(Mutare.Phoenix.all()), & &1.name)
 
       assert Enum.map(specs, & &1.name) ==
-               [
-                 :convention,
-                 :plug_halt,
-                 :http_status,
-                 :redirect_status,
-                 :plug_session,
-                 :resp_header,
-                 :resp_cookie,
-                 :lv_nav,
-                 :lv_reply,
-                 :lv_stream,
-                 :lv_event,
-                 :lv_send_update
-               ]
+               [:convention] ++
+                 base_names ++
+                 [:lv_nav, :lv_reply, :lv_stream, :lv_event, :lv_send_update, :lv_hook]
     end
   end
 
@@ -67,6 +60,7 @@ defmodule Mutare.Phoenix.LiveViewTest do
       @behaviour Phoenix.LiveView
 
       def mount(_params, _session, socket) do
+        socket = Phoenix.LiveView.attach_hook(socket, :log, :handle_event, &log_hook/3)
         {:ok, socket, temporary_assigns: [items: []]}
       end
 
@@ -86,6 +80,8 @@ defmodule Mutare.Phoenix.LiveViewTest do
         Phoenix.LiveView.send_update(DemoWeb.CartComponent, id: id, count: 0)
         {:noreply, socket}
       end
+
+      defp log_hook(_event, _params, socket), do: {:cont, socket}
     end
 
     defmodule DemoWeb.UserAuth do
@@ -124,6 +120,7 @@ defmodule Mutare.Phoenix.LiveViewTest do
         MapSet.new([
           :http_status,
           :lv_event,
+          :lv_hook,
           :lv_nav,
           :lv_reply,
           :lv_send_update,
@@ -131,7 +128,7 @@ defmodule Mutare.Phoenix.LiveViewTest do
           :plug_halt
         ])
 
-      # All seven package families fire (the transform also records structural siblings like
+      # All eight package families fire (the transform also records structural siblings like
       # `:clause_drop` on the multi-clause `handle_event`, so this is a subset check).
       assert MapSet.subset?(package_families, names)
     end

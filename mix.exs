@@ -96,6 +96,11 @@ defmodule Mutare.Phoenix.LiveView.MixProject do
       source_url: @source_url,
       source_ref: "v#{@version}",
       extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      # `Stream`'s moduledoc names core's hidden overlap pass in prose (the reference
+      # is worth keeping — it explains the at:-swap's supersession of core's integer
+      # leaves); don't autolink to it, which also silences the "references hidden"
+      # warning.
+      skip_code_autolink_to: ["Mutare.Transform.Overlap"],
       groups_for_modules: [
         "Mutator front": [Mutare.Phoenix.LiveView],
         "Mutator families": [
@@ -103,7 +108,8 @@ defmodule Mutare.Phoenix.LiveView.MixProject do
           Mutare.Phoenix.LiveView.Reply,
           Mutare.Phoenix.LiveView.Stream,
           Mutare.Phoenix.LiveView.Event,
-          Mutare.Phoenix.LiveView.SendUpdate
+          Mutare.Phoenix.LiveView.SendUpdate,
+          Mutare.Phoenix.LiveView.Hook
         ]
       ]
     ]
