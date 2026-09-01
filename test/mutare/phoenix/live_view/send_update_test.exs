@@ -2,8 +2,8 @@ defmodule Mutare.Phoenix.LiveView.SendUpdateTest do
   @moduledoc """
   `:lv_send_update` — removes a `Phoenix.LiveView` component-update call
   (`send_update/2,3`, `send_update_after/3,4`), the `LiveComponent` sibling of `:lv_event`'s
-  dropped client push. Each call returns `:ok` / a `reference()` (never the socket), so removal
-  collapses it to that faithful return — `send_update` to `:ok`, `send_update_after` to a fresh
+  dropped client push. Neither call returns the socket, so removal collapses to a happy-path
+  return — `send_update` to the stand-in `:ok`, `send_update_after` to a fresh
   `:erlang.make_ref()`. Matches direct, aliased, and bare-imported (`use`-style) forms; the
   never-idiomatic piped form is left alone.
   """

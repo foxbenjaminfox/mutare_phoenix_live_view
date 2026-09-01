@@ -32,14 +32,26 @@ defmodule Mutare.Phoenix.LiveViewTest do
       end
     end
 
+    test "all/0 resolves via Mutare.Mutators.resolve/1 to the five recorded family names" do
+      assert Enum.map(Mutare.Mutators.resolve(LV.all()), & &1.name) ==
+               [:lv_nav, :lv_reply, :lv_stream, :lv_event, :lv_send_update]
+    end
+
     test "composed with the base preset, it splices into a :mutators list and resolves in order" do
-      specs = Mutare.Mutators.resolve([:literal] ++ Mutare.Phoenix.all() ++ LV.all())
+      # `:convention` is the built-in family this file leans on elsewhere (the auth
+      # `:cont`/`:halt` swap), so it stands in for the `:builtins` group the moduledoc's
+      # `.mutare.exs` examples splice these presets alongside.
+      specs = Mutare.Mutators.resolve([:convention] ++ Mutare.Phoenix.all() ++ LV.all())
 
       assert Enum.map(specs, & &1.name) ==
                [
-                 :literal,
+                 :convention,
                  :plug_halt,
                  :http_status,
+                 :redirect_status,
+                 :plug_session,
+                 :resp_header,
+                 :resp_cookie,
                  :lv_nav,
                  :lv_reply,
                  :lv_stream,

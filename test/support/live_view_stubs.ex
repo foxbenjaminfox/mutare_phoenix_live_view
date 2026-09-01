@@ -36,8 +36,10 @@ defmodule Phoenix.LiveView do
   def push_patch(socket, _opts), do: socket
   def redirect(socket, _opts), do: socket
 
-  # Client-event surface (`:lv_event`). `push_event/3` is the only arity.
+  # Client-event surface (`:lv_event`). The real API is `push_event(socket, event, payload,
+  # opts \\ [])` — arity 3 *and* 4 (the trailing opts carry e.g. `dispatch: :before`).
   def push_event(socket, _event, _payload), do: socket
+  def push_event(socket, _event, _payload, _opts), do: socket
 
   # Stream surface (`:lv_stream`). `stream_insert` has the optional `opts` arg (arity 3 *and*
   # 4); `stream_delete` is arity 3 only — the asymmetry `:lv_stream`'s arity gate guards.

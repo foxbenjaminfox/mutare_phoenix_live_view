@@ -15,13 +15,14 @@ defmodule Mutare.Phoenix.LiveView.SendUpdate do
   the server→client one.
 
   Unlike `push_event` (socket-in, socket-out), `send_update`/`send_update_after` are
-  fire-and-forget side effects that return `:ok` / a timer `reference()`, never the socket — so
-  removal collapses the whole call to *that* happy-path return (not to an argument), and the two
-  returns differ: `send_update` → the literal `:ok`; `send_update_after` (which schedules a timer
-  and hands back its ref) → a fresh `:erlang.make_ref()`. Matching the real return type keeps
-  the mutant a clean no-op even at the rare site that captures the ref to `Process.cancel_timer/1`
-  it later — cancelling an unknown ref returns `false`, where a `:ok` there would raise (an
-  uninformative crash-kill this package exists to avoid).
+  fire-and-forget side effects that never return the socket — so removal collapses the whole
+  call to a happy-path return (not to an argument), and the two differ. `send_update`'s return
+  is undocumented (under the hood, the raw `send/2` echo), so the conventional `:ok` stands in;
+  `send_update_after` documents its return — the scheduled timer's `reference()` — so its no-op
+  is a fresh `:erlang.make_ref()`. Matching the documented ref type keeps the mutant a clean
+  no-op even at the rare site that captures the ref to `Process.cancel_timer/1` it later —
+  cancelling an unknown ref returns `false`, where a `:ok` there would raise (an uninformative
+  crash-kill this package exists to avoid).
 
   Because no socket flows through, these calls are never idiomatically piped (a direct pipe
   would feed the module/pid slot), so a piped occurrence is left alone rather than given a
@@ -37,8 +38,8 @@ defmodule Mutare.Phoenix.LiveView.SendUpdate do
   @behaviour Mutare.Mutator
 
   alias Mutare.AST
+  alias Mutare.Calls
   alias Mutare.Mutator
-  alias Mutare.Transform.Calls
 
   @impl Mutare.Mutator
   @spec name() :: :lv_send_update
@@ -55,9 +56,9 @@ defmodule Mutare.Phoenix.LiveView.SendUpdate do
   @impl Mutare.Mutator
   @spec mutate(Macro.t(), Mutator.context()) :: :skip | [Macro.t()]
   def mutate(node, %{pipe_mode: pipe_mode}) do
-    case Calls.resolved_call(node) do
-      {[:Phoenix, :LiveView], fun, args, _rebuild} -> removed_call(fun, args, pipe_mode)
-      _other -> :skip
+    case Calls.resolved_call_to(node, Phoenix.LiveView) do
+      {:ok, fun, args, _rebuild} -> removed_call(fun, args, pipe_mode)
+      :error -> :skip
     end
   end
 
@@ -73,10 +74,11 @@ defmodule Mutare.Phoenix.LiveView.SendUpdate do
       else: :skip
   end
 
-  # Each call's faithful happy-path return, so the mutant differs from the original only by the
-  # dropped side effect — not by type. `send_update` returns `:ok`; `send_update_after` schedules
-  # a timer and returns its `reference()`, so its no-op yields a fresh reference no live timer
-  # backs (a captured ref then `Process.cancel_timer/1`s cleanly to `false`, never crashing).
+  # Each call's happy-path return, so the mutant differs from the original only by the dropped
+  # side effect — not by usable type. `send_update`'s return is undocumented (`:ok` stands in);
+  # `send_update_after` schedules a timer and returns its `reference()`, so its no-op yields a
+  # fresh reference no live timer backs (a captured ref then `Process.cancel_timer/1`s cleanly
+  # to `false`, never crashing).
   #
   # Deliberately unspecced: the two function heads make the success-typing domain
   # `:send_update | :send_update_after`, but the lone caller reaches here holding a plain

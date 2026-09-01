@@ -19,10 +19,10 @@ defmodule Mutare.Phoenix.LiveView.Stream do
   """
   @behaviour Mutare.Mutator
 
+  alias Mutare.Calls
   alias Mutare.Mutator
-  alias Mutare.Transform.Calls
 
-  # The `rebuild` closure `Calls.resolved_call/1` hands back: re-emits the call in its
+  # The `rebuild` closure `Calls.resolved_call_to/3` hands back: re-emits the call in its
   # written form with a new function name and argument list.
   @typep rebuild :: (atom(), [Macro.t()] -> Macro.t())
 
@@ -41,9 +41,9 @@ defmodule Mutare.Phoenix.LiveView.Stream do
   @impl Mutare.Mutator
   @spec mutate(Macro.t(), Mutator.context()) :: :skip | [Macro.t()]
   def mutate(node, %{pipe_mode: pipe_mode}) do
-    case Calls.resolved_call(node) do
-      {[:Phoenix, :LiveView], fun, args, rebuild} -> stream_swaps(fun, args, pipe_mode, rebuild)
-      _other -> :skip
+    case Calls.resolved_call_to(node, Phoenix.LiveView) do
+      {:ok, fun, args, rebuild} -> stream_swaps(fun, args, pipe_mode, rebuild)
+      :error -> :skip
     end
   end
 

@@ -1,6 +1,6 @@
 defmodule Mutare.Phoenix.LiveView.EventTest do
   @moduledoc """
-  `:lv_event` — removes `Phoenix.LiveView.push_event/3` (the "forgot to push a client event"
+  `:lv_event` — removes `Phoenix.LiveView.push_event/3,4` (the "forgot to push a client event"
   removal, the LiveView sibling of `:plug_halt`), pipe-aware: non-piped → the socket, piped →
   `Function.identity()`. Matches direct, aliased, and bare-imported (`use`-style) forms.
   """
@@ -38,6 +38,13 @@ defmodule Mutare.Phoenix.LiveView.EventTest do
 
       assert event_diffs(source) == [{"LV.push_event(s, \"ping\", %{})", "s"}]
     end
+
+    test "the arity-4 form (trailing opts, e.g. dispatch: :before) collapses to the socket" do
+      body = "  def go(s), do: push_event(s, \"ping\", %{}, dispatch: :before)"
+
+      assert event_diffs(live(body)) ==
+               [{"push_event(s, \"ping\", %{}, dispatch: :before)", "s"}]
+    end
   end
 
   describe "pipe awareness" do
@@ -50,6 +57,13 @@ defmodule Mutare.Phoenix.LiveView.EventTest do
       body = "  def go(s), do: s |> push_event(\"a\", %{}) |> assign(:x, 1)"
       assert event_diffs(live(body)) == [{"push_event(\"a\", %{})", "Elixir.Function.identity()"}]
     end
+
+    test "a piped arity-4 stage (three visible args) becomes the identity no-op" do
+      body = "  def go(s), do: s |> push_event(\"a\", %{}, dispatch: :before)"
+
+      assert event_diffs(live(body)) ==
+               [{"push_event(\"a\", %{}, dispatch: :before)", "Elixir.Function.identity()"}]
+    end
   end
 
   describe "scope" do
@@ -60,11 +74,14 @@ defmodule Mutare.Phoenix.LiveView.EventTest do
       assert event_diffs(source) == []
     end
 
-    test "a non-arity-3 qualified push_event is left alone (the arity guard)" do
-      source =
-        "defmodule L do\n  def go(s), do: Phoenix.LiveView.push_event(s, \"ping\")\nend\n"
+    test "a wrong-arity qualified push_event is left alone (the arity guard)" do
+      two = "defmodule L do\n  def go(s), do: Phoenix.LiveView.push_event(s, \"ping\")\nend\n"
 
-      assert event_diffs(source) == []
+      five =
+        "defmodule L do\n  def go(s), do: Phoenix.LiveView.push_event(s, \"p\", %{}, [], :x)\nend\n"
+
+      assert event_diffs(two) == []
+      assert event_diffs(five) == []
     end
 
     test "does not remove a same-named local push_event (no import, no qualifier)" do
@@ -105,6 +122,7 @@ defmodule Mutare.Phoenix.LiveView.EventTest do
         socket
         |> push_event("highlight", %{id: 1})
         |> push_event("scroll", %{to: "top"})
+        |> push_event("early", %{}, dispatch: :before)
       end
     end
     """

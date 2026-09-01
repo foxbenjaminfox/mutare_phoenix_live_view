@@ -41,6 +41,18 @@ defmodule Mutare.Phoenix.LiveView.StreamTest do
       assert stream_diffs(live("  def go(s, x), do: stream_insert(s, :songs, x)")) ==
                [{"stream_insert(s, :songs, x)", "stream_delete(s, :songs, x)"}]
     end
+
+    test "an aliased LV.stream_insert swaps, keeping the alias" do
+      source = """
+      defmodule L do
+        alias Phoenix.LiveView, as: LV
+        def go(s, x), do: LV.stream_insert(s, :songs, x)
+      end
+      """
+
+      assert stream_diffs(source) ==
+               [{"LV.stream_insert(s, :songs, x)", "LV.stream_delete(s, :songs, x)"}]
+    end
   end
 
   describe "pipe awareness (effective arity recovers the off-by-one)" do
