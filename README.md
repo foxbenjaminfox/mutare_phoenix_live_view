@@ -23,8 +23,8 @@ are on your code path too, ready to compose.
 | `Mutare.Phoenix.LiveView.Navigation` | `:lv_nav` | swaps `push_navigate` ↔ `push_patch` | no test pins *how* navigation happened (remount vs in-process patch) — `assert_redirect` vs `assert_patch` |
 | `Mutare.Phoenix.LiveView.Reply` | `:lv_reply` | drops a callback's optional trailing tuple element (`{:reply, payload, socket}` → `{:noreply, socket}`, `{:ok, socket, opts}` → `{:ok, socket}`) | no test checks the JS-hook reply payload or the `mount` option. Fires in `@behaviour Phoenix.LiveView` / `Phoenix.LiveComponent` modules |
 | `Mutare.Phoenix.LiveView.Stream` | `:lv_stream` | swaps `stream_insert` ↔ `stream_delete` (the arity-3 form both share) | no test asserts the stream's *contents* after the event |
-| `Mutare.Phoenix.LiveView.Event` | `:lv_event` | removes `push_event/3` | no test asserts the event reaches the client — `assert_push_event` |
-| `Mutare.Phoenix.LiveView.SendUpdate` | `:lv_send_update` | removes `send_update/2,3` / `send_update_after/3,4` (collapses the call to its real return — `:ok`, or a fresh `make_ref()` for `_after`) | no test asserts a child `LiveComponent` was told to re-render with new assigns — the server→component sibling of `:lv_event`'s dropped client push |
+| `Mutare.Phoenix.LiveView.Event` | `:lv_event` | removes `push_event/3,4` | no test asserts the event reaches the client — `assert_push_event` |
+| `Mutare.Phoenix.LiveView.SendUpdate` | `:lv_send_update` | removes `send_update/2,3` / `send_update_after/3,4` (collapses the call to a faithful stand-in — `:ok`, or a fresh `make_ref()` for `_after`'s timer ref) | no test asserts a child `LiveComponent` was told to re-render with new assigns — the server→component sibling of `:lv_event`'s dropped client push |
 
 Each family matches its call written directly (`Phoenix.LiveView.push_navigate(...)`), aliased,
 or bare-imported (`push_navigate(...)`, the form `use MyAppWeb, :live_view` produces). Silence a

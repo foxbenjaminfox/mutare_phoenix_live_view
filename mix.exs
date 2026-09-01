@@ -1,7 +1,8 @@
-defmodule MutarePhoenixLiveView.MixProject do
+defmodule Mutare.Phoenix.LiveView.MixProject do
   use Mix.Project
 
   @version "0.1.0"
+  @source_url "https://github.com/foxbenjaminfox/mutare_phoenix_live_view"
 
   def project do
     [
@@ -10,13 +11,11 @@ defmodule MutarePhoenixLiveView.MixProject do
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      description: description(),
+      package: package(),
       deps: deps(),
       aliases: aliases(),
       dialyzer: dialyzer(),
-      description: description(),
-      package: package(),
-      name: "Mutare Phoenix LiveView",
-      source_url: "https://github.com/foxbenjaminfox/mutare_phoenix_live_view",
       docs: docs()
     ]
   end
@@ -27,6 +26,29 @@ defmodule MutarePhoenixLiveView.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp description do
+    "Custom Mutare mutators for the Phoenix LiveView surface — " <>
+      "socket navigation, reply tuples, streams, pushed events, and component updates."
+  end
+
+  # Hex package metadata. The `mutare_phoenix` base package (and through it the
+  # `mutare` core) is still a `path:` dependency, so an actual `mix hex.publish`
+  # stays blocked until both ship to Hex — this section keeps the manifest ready
+  # for that day. Only runtime and doc artifacts ship — never the test suite,
+  # fixtures, or the examples app.
+  defp package do
+    [
+      licenses: ["MIT"],
+      maintainers: ["Benjamin Fox"],
+      links: %{
+        "GitHub" => @source_url,
+        "Mutare" => "https://hexdocs.pm/mutare",
+        "Changelog" => "https://hexdocs.pm/mutare_phoenix_live_view/changelog.html"
+      },
+      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE)
+    ]
+  end
 
   defp deps do
     [
@@ -42,6 +64,8 @@ defmodule MutarePhoenixLiveView.MixProject do
     ]
   end
 
+  # `mix check` is the single quality gate: formatting, lint, and type analysis.
+  # Any non-zero step aborts the rest, so a green run means all three passed.
   defp aliases do
     [check: ["format --check-formatted", "credo", "dialyzer"]]
   end
@@ -64,28 +88,24 @@ defmodule MutarePhoenixLiveView.MixProject do
     ]
   end
 
+  # ExDoc configuration. `mix docs` renders to `doc/` (gitignored). README is the
+  # landing page.
   defp docs do
     [
       main: "readme",
-      extras: [
-        "README.md": [title: "Overview"],
-        "CHANGELOG.md": [title: "Changelog"],
-        LICENSE: [title: "License"]
-      ],
+      source_url: @source_url,
       source_ref: "v#{@version}",
-      source_url: "https://github.com/foxbenjaminfox/mutare_phoenix_live_view"
-    ]
-  end
-
-  defp description do
-    "Custom Mutare mutators for Phoenix LiveView."
-  end
-
-  defp package do
-    [
-      licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/foxbenjaminfox/mutare_phoenix_live_view"},
-      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
+      extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      groups_for_modules: [
+        "Mutator front": [Mutare.Phoenix.LiveView],
+        "Mutator families": [
+          Mutare.Phoenix.LiveView.Navigation,
+          Mutare.Phoenix.LiveView.Reply,
+          Mutare.Phoenix.LiveView.Stream,
+          Mutare.Phoenix.LiveView.Event,
+          Mutare.Phoenix.LiveView.SendUpdate
+        ]
+      ]
     ]
   end
 end
