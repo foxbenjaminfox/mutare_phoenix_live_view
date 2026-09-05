@@ -10,9 +10,10 @@ These are exactly the things a suite tends to under-assert: a test that checks "
 happened" but not *which* transformation leaves a gap. `mutare_phoenix_live_view` turns each
 such gap into a located [Mutare](https://hex.pm/packages/mutare) survivor.
 
-It **builds on** [`mutare_phoenix`](https://hex.pm/packages/mutare_phoenix) (the conn-level base
-families) the way `phoenix_live_view` builds on `phoenix`: it depends on it, so those families
-are on your code path too, ready to compose.
+It **builds on** [`mutare_phoenix`](https://hex.pm/packages/mutare_phoenix) (the
+`Phoenix.Controller` families) — and through it [`mutare_plug`](https://hex.pm/packages/mutare_plug)
+(the `Plug.Conn` families) — the way `phoenix_live_view` builds on `phoenix`: it depends on
+them, so those families are on your code path too, ready to compose.
 
 ## The six families
 
@@ -45,13 +46,15 @@ literal wherever it appears. The marquee LiveView auth-bypass coverage comes for
 ## Usage
 
 `mutare_phoenix_live_view` rides on the [Mutare](https://hex.pm/packages/mutare) engine and
-builds on `mutare_phoenix`, so add them as `:dev`/`:test` dependencies:
+builds on `mutare_phoenix` (and, through it, `mutare_plug`), so add them as `:dev`/`:test`
+dependencies:
 
 ```elixir
 # mix.exs
 defp deps do
   [
     {:mutare, "~> 0.1", only: [:dev, :test], runtime: false},
+    {:mutare_plug, "~> 0.1", only: [:dev, :test], runtime: false},
     {:mutare_phoenix, "~> 0.1", only: [:dev, :test], runtime: false},
     {:mutare_phoenix_live_view, "~> 0.1", only: [:dev, :test], runtime: false}
   ]
@@ -66,16 +69,22 @@ so include the `:builtins` group token to keep the built-ins on (it includes `:c
 [mutators: [:builtins] ++ Mutare.Phoenix.LiveView.all()]
 ```
 
-A full-stack app that also wants the conn-level base families composes all three groups:
+A full-stack app that also wants the conn-level and controller-level families composes all
+four groups, and lists `Mutare.Phoenix` under `:extensions` for its defensive Phoenix macro
+routing:
 
 ```elixir
 # .mutare.exs — a full-stack Phoenix + LiveView app
-[mutators: [:builtins] ++ Mutare.Phoenix.all() ++ Mutare.Phoenix.LiveView.all()]
+[
+  mutators:
+    [:builtins] ++ Mutare.Plug.all() ++ Mutare.Phoenix.all() ++ Mutare.Phoenix.LiveView.all(),
+  extensions: [Mutare.Phoenix]
+]
 ```
 
-`all/0` returns only the five LiveView families — it does **not** include the base
-`mutare_phoenix` families, so compose `Mutare.Phoenix.all/0` explicitly when you want the full
-Phoenix + LiveView surface. Run it the usual way:
+`all/0` returns only the six LiveView families — it does **not** include the base
+`mutare_plug` / `mutare_phoenix` families, so compose `Mutare.Plug.all/0` and
+`Mutare.Phoenix.all/0` explicitly when you want the full surface. Run it the usual way:
 
 ```
 mix mutare
@@ -108,10 +117,11 @@ mix mutare examples/demo
 
 ## Scope
 
-The conn-level base families live in the companion
-[`mutare_phoenix`](https://hex.pm/packages/mutare_phoenix); the mutation engine is
-[`mutare`](https://hex.pm/packages/mutare). Compose `Mutare.Phoenix.all/0` alongside
-`Mutare.Phoenix.LiveView.all/0` (see "Usage") for the full conn + socket surface.
+The `Plug.Conn` families live in [`mutare_plug`](https://hex.pm/packages/mutare_plug) and the
+`Phoenix.Controller` families in [`mutare_phoenix`](https://hex.pm/packages/mutare_phoenix);
+the mutation engine is [`mutare`](https://hex.pm/packages/mutare). Compose `Mutare.Plug.all/0`
+and `Mutare.Phoenix.all/0` alongside `Mutare.Phoenix.LiveView.all/0` (see "Usage") for the
+full conn + controller + socket surface.
 
 ## License
 

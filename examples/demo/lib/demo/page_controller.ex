@@ -1,9 +1,9 @@
 defmodule Demo.PageController do
   @moduledoc """
-  A plain controller action, included to show the **base `mutare_phoenix` families compose in**
-  — a full-stack app lists
-  `[:builtins] ++ Mutare.Phoenix.all() ++ Mutare.Phoenix.LiveView.all()` and gets both the
-  LiveView *and* the conn-level families. Its conn transformations are under-asserted exactly
+  A plain controller action, included to show the **base `mutare_plug` / `mutare_phoenix`
+  families compose in** — a full-stack app lists
+  `[:builtins] ++ Mutare.Plug.all() ++ Mutare.Phoenix.all() ++ Mutare.Phoenix.LiveView.all()`
+  and gets the LiveView, controller-level, *and* conn-level families. Its conn transformations are under-asserted exactly
   as in the base package's demo.
   """
 

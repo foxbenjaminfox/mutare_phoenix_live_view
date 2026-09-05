@@ -4,8 +4,9 @@ defmodule Mutare.Phoenix.LiveView do
   socket navigation, callback reply tuples, stream operations, pushed client events,
   child-component updates, and lifecycle-hook attachment.
 
-  This package depends on `mutare_phoenix`, so the base conn-level families are on your code
-  path too; compose the two presets for a full-stack app (see "Usage").
+  This package depends on `mutare_phoenix` (and through it `mutare_plug`), so the
+  controller-level and conn-level families are on your code path too; compose the three
+  presets for a full-stack app (see "Usage").
 
   ## Families
 
@@ -33,13 +34,21 @@ defmodule Mutare.Phoenix.LiveView do
       # .mutare.exs — a LiveView app
       [mutators: [:builtins] ++ Mutare.Phoenix.LiveView.all()]
 
-  A full-stack app that also wants the conn-level base families composes all three groups:
+  A full-stack app that also wants the conn-level and controller-level families composes all
+  four groups, and lists `Mutare.Phoenix` under `:extensions` for its defensive Phoenix macro
+  routing:
 
       # .mutare.exs — a full-stack Phoenix + LiveView app
-      [mutators: [:builtins] ++ Mutare.Phoenix.all() ++ Mutare.Phoenix.LiveView.all()]
+      [
+        mutators:
+          [:builtins] ++ Mutare.Plug.all() ++ Mutare.Phoenix.all() ++
+            Mutare.Phoenix.LiveView.all(),
+        extensions: [Mutare.Phoenix]
+      ]
 
   `all/0` returns only the six LiveView families — it does not include the base
-  `mutare_phoenix` families, so compose `Mutare.Phoenix.all/0` explicitly as shown above.
+  `mutare_plug` / `mutare_phoenix` families, so compose `Mutare.Plug.all/0` and
+  `Mutare.Phoenix.all/0` explicitly as shown above.
 
   To drop a family that is too noisy for your suite (e.g. `:lv_stream`, `:lv_event`, or
   `:lv_send_update` in an app that never asserts stream contents, pushed events, or component
@@ -59,9 +68,9 @@ defmodule Mutare.Phoenix.LiveView do
   This package's six LiveView mutator families — `Navigation`, `Reply`, `Stream`, `Event`,
   `SendUpdate`, `Hook`.
 
-  It does **not** include the base `mutare_phoenix` families; compose those explicitly with
-  `Mutare.Phoenix.all/0` when you want the full Phoenix + LiveView surface (see the moduledoc's
-  "Usage").
+  It does **not** include the base `mutare_plug` / `mutare_phoenix` families; compose those
+  explicitly with `Mutare.Plug.all/0` and `Mutare.Phoenix.all/0` when you want the full
+  Plug + Phoenix + LiveView surface (see the moduledoc's "Usage").
 
       iex> Mutare.Phoenix.LiveView.all()
       [Mutare.Phoenix.LiveView.Navigation, Mutare.Phoenix.LiveView.Reply,

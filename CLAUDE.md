@@ -11,7 +11,7 @@ Read `README.md` first — it documents each family, the mutation it makes, and 
 ## Commands
 
 ```sh
-mix deps.get                       # fetch deps (mutare + mutare_phoenix are local path deps)
+mix deps.get                       # fetch deps (mutare, mutare_plug, and mutare_phoenix are local path deps)
 mix compile
 mix test                           # full suite (all async)
 mix test test/mutare/phoenix/live_view/navigation_test.exs        # one file
@@ -31,8 +31,8 @@ mix mutare examples/demo           # appends the compiled package ebins to its c
 
 ## Dependencies & layout
 
-- `{:mutare_phoenix, path: "../mutare_phoenix"}` is a **path dep** for local dev; it transitively pulls `{:mutare, path: "../mutare"}` (the engine). Both repos are siblings of this one. The Mutare engine source (e.g. `Mutare.Test`, `Mutare.Mutator`, `Mutare.Transform.Calls`) lives in `../mutare/lib` — read it there when you need the contract.
-- This package **builds on** `mutare_phoenix` the way `phoenix_live_view` builds on `phoenix`: depending on it puts the conn-level base families on the code path, but `Mutare.Phoenix.LiveView.all/0` returns **only the six LiveView families** — compose `Mutare.Phoenix.all/0` explicitly for the full surface.
+- `{:mutare_phoenix, path: "../mutare_phoenix"}` is a **path dep** for local dev; it transitively pulls `{:mutare_plug, path: "../mutare_plug"}` (the `Plug.Conn` families) and `{:mutare, path: "../mutare"}` (the engine). All three repos are siblings of this one. The Mutare engine source (e.g. `Mutare.Test`, `Mutare.Mutator`, `Mutare.Transform.Calls`) lives in `../mutare/lib` — read it there when you need the contract.
+- This package **builds on** `mutare_phoenix` the way `phoenix_live_view` builds on `phoenix`: depending on it puts the controller-level (`Mutare.Phoenix.all/0`) and, through `mutare_plug`, the conn-level (`Mutare.Plug.all/0`) families on the code path, but `Mutare.Phoenix.LiveView.all/0` returns **only the six LiveView families** — compose the other two presets explicitly for the full surface, and list `Mutare.Phoenix` under `:extensions` for its defensive Phoenix macro routing.
 - `lib/mutare/phoenix/live_view.ex` is the public entry (`all/0`); each family is one module under `lib/mutare/phoenix/live_view/`.
 - The package matches module **names** (`[:Phoenix, :LiveView]`), so it depends on neither `phoenix` nor `phoenix_live_view`; resolution happens in the consumer's project.
 

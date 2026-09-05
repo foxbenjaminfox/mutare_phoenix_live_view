@@ -44,8 +44,13 @@ defmodule Mutare.Phoenix.LiveViewTest do
       # `.mutare.exs` examples splice these presets alongside. The base package's family list
       # is read off its own preset rather than repeated here — this test pins the *splicing*
       # (everything resolves, in order), not `mutare_phoenix`'s registry.
-      specs = Mutare.Mutators.resolve([:convention] ++ Mutare.Phoenix.all() ++ LV.all())
-      base_names = Enum.map(Mutare.Mutators.resolve(Mutare.Phoenix.all()), & &1.name)
+      specs =
+        Mutare.Mutators.resolve(
+          [:convention] ++ Mutare.Plug.all() ++ Mutare.Phoenix.all() ++ LV.all()
+        )
+
+      base_names =
+        Enum.map(Mutare.Mutators.resolve(Mutare.Plug.all() ++ Mutare.Phoenix.all()), & &1.name)
 
       assert Enum.map(specs, & &1.name) ==
                [:convention] ++
@@ -112,7 +117,7 @@ defmodule Mutare.Phoenix.LiveViewTest do
     test "every package family fires on the surface it owns" do
       names =
         @surface
-        |> diffs(Mutare.Phoenix.all() ++ LV.all())
+        |> diffs(Mutare.Plug.all() ++ Mutare.Phoenix.all() ++ LV.all())
         |> Enum.map(&elem(&1, 0))
         |> MapSet.new()
 
@@ -128,8 +133,10 @@ defmodule Mutare.Phoenix.LiveViewTest do
           :plug_halt
         ])
 
-      # All eight package families fire (the transform also records structural siblings like
-      # `:clause_drop` on the multi-clause `handle_event`, so this is a subset check).
+      # All eight package families fire (`:http_status` and `:plug_halt` from `mutare_plug`,
+      # the six `lv_*` from here). A subset check, so an engine that records extra structural
+      # siblings on the multi-clause `handle_event` (as older Mutare did with `:clause_drop`)
+      # does not break the assertion.
       assert MapSet.subset?(package_families, names)
     end
 
@@ -144,7 +151,7 @@ defmodule Mutare.Phoenix.LiveViewTest do
     end
 
     test "the whole surface compiles as one metamutant, built-ins included" do
-      mutators = Mutare.Mutators.all() ++ Mutare.Phoenix.all() ++ LV.all()
+      mutators = Mutare.Mutators.all() ++ Mutare.Plug.all() ++ Mutare.Phoenix.all() ++ LV.all()
       assert_metamutant_compiles(@surface, mutators)
     end
   end

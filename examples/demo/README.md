@@ -21,7 +21,7 @@ mix mutare examples/demo
 Expected (file order):
 
 ```
-mutare in examples/demo: 16 mutants across 3 file(s)
+mutare in examples/demo: 11 mutants across 3 file(s)
 
 lib/demo/page_controller.ex:13  [http_status, in-place]  SURVIVED
 -    |> Plug.Conn.put_status(:created)
@@ -59,7 +59,7 @@ lib/demo/user_auth.ex:21  [convention, in-place]  SURVIVED
 -      {:halt, Phoenix.LiveView.redirect(socket, to: "/login")}
 +      {:cont, Phoenix.LiveView.redirect(socket, to: "/login")}
 
-mutation score: 43.8%  (7 killed, 9 survived, 16 total)
+mutation score: 18.2%  (2 killed, 9 survived, 11 total)
 ```
 
 Every family on show produces a survivor — and the kills (below) prove the suite *does* catch
@@ -109,20 +109,20 @@ what it asserts.
   built-in `Mutare.Mutators.ConventionAtom` swap (on by default), which matches the atom
   literal regardless of module/behaviour. The marquee LiveView auth coverage comes for free.
 
-## The mutare_phoenix survivor
+## The mutare_plug survivor
 
 - **`:http_status`** (`PageController.create`) — answers `201 Created` but the test asserts
   only the body, so swapping `:created` for another success (`:ok`/`:accepted`) survives.
 
-Composing the two presets (`Mutare.Phoenix.all() ++ Mutare.Phoenix.LiveView.all()`) enables the
-whole stack: the LiveView families **and** the conn-level base families.
+Composing the three presets
+(`Mutare.Plug.all() ++ Mutare.Phoenix.all() ++ Mutare.Phoenix.LiveView.all()`) enables the
+whole stack: the LiveView families **and** the conn-level and controller-level base families.
 
 ## What the kills prove
 
-The 7 killed mutants are the control: `:cont → :halt` (the authenticated path *is* asserted),
-`:ok → :error` on `mount`'s tag (`mount succeeds` asserts `:ok`), and five `clause_drop`s on
-the `handle_event/3` clauses (each event *is* exercised). The suite catches what it checks —
-mutation testing's value is everything it *doesn't*.
+The 2 killed mutants are the control: `:cont → :halt` (the authenticated path *is* asserted)
+and `:ok → :error` on `mount`'s tag (`mount succeeds` asserts `:ok`). The suite catches what
+it checks — mutation testing's value is everything it *doesn't*.
 
 > Why `:ok → :error` (or `:mutare`) doesn't already cover `:http_status`, and why `:reply`
 > isn't covered by `:convention`: in those positions the built-in atom swaps **crash** rather
