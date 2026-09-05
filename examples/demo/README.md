@@ -21,7 +21,7 @@ mix mutare examples/demo
 Expected (file order):
 
 ```
-mutare in examples/demo: 11 mutants across 3 file(s)
+mutare in examples/demo: 12 mutants across 3 file(s)
 
 lib/demo/page_controller.ex:13  [http_status, in-place]  SURVIVED
 -    |> Plug.Conn.put_status(:created)
@@ -59,7 +59,7 @@ lib/demo/user_auth.ex:21  [convention, in-place]  SURVIVED
 -      {:halt, Phoenix.LiveView.redirect(socket, to: "/login")}
 +      {:cont, Phoenix.LiveView.redirect(socket, to: "/login")}
 
-mutation score: 18.2%  (2 killed, 9 survived, 11 total)
+mutation score: 25.0%  (3 killed, 9 survived, 12 total)
 ```
 
 Every family on show produces a survivor — and the kills (below) prove the suite *does* catch
@@ -120,9 +120,10 @@ whole stack: the LiveView families **and** the conn-level and controller-level b
 
 ## What the kills prove
 
-The 2 killed mutants are the control: `:cont → :halt` (the authenticated path *is* asserted)
-and `:ok → :error` on `mount`'s tag (`mount succeeds` asserts `:ok`). The suite catches what
-it checks — mutation testing's value is everything it *doesn't*.
+The 3 killed mutants are the control: `:cont → :halt` (the authenticated path *is* asserted),
+`:ok → :error` on `mount`'s tag (`mount succeeds` asserts `:ok`), and `:controller_body`'s
+blanked `json` body on `create` (its test *does* read the body). The suite catches what it
+checks — mutation testing's value is everything it *doesn't*.
 
 > Why `:ok → :error` (or `:mutare`) doesn't already cover `:http_status`, and why `:reply`
 > isn't covered by `:convention`: in those positions the built-in atom swaps **crash** rather
