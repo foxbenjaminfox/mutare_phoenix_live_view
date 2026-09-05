@@ -10,8 +10,8 @@ defmodule Mutare.Phoenix.LiveView.NavigationTest do
 
   import Mutare.Test
 
-  alias Mutare.Macro.Spec
-  alias Mutare.MacroRouting.Registry
+  alias Mutare.CallRouting.Spec
+  alias Mutare.CallRouting.Registry
   alias Mutare.Phoenix.LiveView.Navigation
 
   defp nav_diffs(source), do: diffs_for(source, [Navigation], :lv_nav)
@@ -117,17 +117,15 @@ defmodule Mutare.Phoenix.LiveView.NavigationTest do
     end
   end
 
-  describe "macro_routes/0 — defensive LiveView DSL :skip" do
+  describe "call_routes/0 — the defensive LiveView DSL :skip (whole calls)" do
     test "registers the live route DSL so core leaves route declarations raw" do
       registry = Registry.build([], Mutare.Mutators.resolve([Navigation]))
 
-      assert routing(registry, [:Phoenix, :LiveView, :Router], :live, 3) ==
-               [:skip, :skip, :skip]
+      assert routing(registry, [:Phoenix, :LiveView, :Router], :live, 3) == :skip
 
-      assert routing(registry, [:Phoenix, :LiveView, :Router], :live_session, 2) ==
-               [:skip, :skip]
+      assert routing(registry, [:Phoenix, :LiveView, :Router], :live_session, 2) == :skip
 
-      assert routing(registry, [:Phoenix, :LiveView], :on_mount, 1) == [:skip]
+      assert routing(registry, [:Phoenix, :LiveView], :on_mount, 1) == :skip
 
       # An unregistered name is unaffected — the mutated runtime calls stay reachable.
       assert routing(registry, [:Phoenix, :LiveView], :push_navigate, 2) == nil
@@ -137,15 +135,15 @@ defmodule Mutare.Phoenix.LiveView.NavigationTest do
     test "registers the declarative-assigns DSL (attr/slot/embed_templates)" do
       registry = Registry.build([], Mutare.Mutators.resolve([Navigation]))
 
-      assert routing(registry, [:Phoenix, :Component], :attr, 3) == [:skip, :skip, :skip]
-      assert routing(registry, [:Phoenix, :Component], :slot, 2) == [:skip, :skip]
-      assert routing(registry, [:Phoenix, :Component], :embed_templates, 1) == [:skip]
+      assert routing(registry, [:Phoenix, :Component], :attr, 3) == :skip
+      assert routing(registry, [:Phoenix, :Component], :slot, 2) == :skip
+      assert routing(registry, [:Phoenix, :Component], :embed_templates, 1) == :skip
     end
 
-    test "every registered entry targets the LiveView DSL and skips at any arity" do
+    test "every registered entry targets the LiveView DSL and skips the call at any arity" do
       dsl_modules = [Phoenix.LiveView.Router, Phoenix.LiveView, Phoenix.Component]
 
-      assert Enum.all?(Navigation.macro_routes(), fn
+      assert Enum.all?(Navigation.call_routes(), fn
                {module, name, :any, :skip} -> module in dsl_modules and is_atom(name)
                _other -> false
              end)

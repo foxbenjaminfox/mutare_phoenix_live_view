@@ -86,7 +86,7 @@ defmodule Phoenix.LiveComponent do
   end
 end
 
-# Module-key targets for `:lv_nav`'s `macro_routes/0` `:skip` registration (the `live`/
+# Module-key targets for `:lv_nav`'s `call_routes/0` `:skip` registration (the `live`/
 # `live_session` route DSL and the `attr`/`slot`/`embed_templates` declarative assigns). The
 # registration is purely syntactic, so no DSL macros are required here — the modules only need
 # to exist. (`on_mount`'s target is the `Phoenix.LiveView` stand-in above.)

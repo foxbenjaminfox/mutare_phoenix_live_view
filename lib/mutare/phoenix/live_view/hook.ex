@@ -26,15 +26,15 @@ defmodule Mutare.Phoenix.LiveView.Hook do
 
   The hook *name* and *stage* arguments are structural identifiers, not computed values —
   perturbing `:handle_event` raises inside `attach_hook` (an uninformative crash-kill), and a
-  renamed hook still runs (a near-unkillable equivalent). This family therefore pins both
-  positions with the shared `Mutare.Mutator.structural_label/0` mark, so every
-  `:skip_arguments`-honouring core value family (`AtomLiteral`, `StringLiteral`, …) leaves
-  them alone.
+  renamed hook still runs (a near-unkillable equivalent). This family therefore routes both
+  positions `:raw` (`Mutare.CallRouting`), so no core family — `AtomLiteral`, `StringLiteral`,
+  `ConventionAtom`, … — mutates them or anything inside them.
 
   Matches direct (`Phoenix.LiveView.attach_hook(...)`), aliased, and bare-imported
   (`use`-injected) calls.
   """
   @behaviour Mutare.Mutator
+  @behaviour Mutare.CallRouting
 
   alias Mutare.AST
   alias Mutare.Calls
@@ -70,15 +70,16 @@ defmodule Mutare.Phoenix.LiveView.Hook do
 
   # The hook name (effective index 1) and stage (index 2) are structural identifiers — a label
   # the code detaches by and a stage atom `attach_hook` validates — not values the program
-  # computes with. Pin them with the shared `:structural` label so core's value families
-  # (`AtomLiteral` on `:handle_event`, `StringLiteral` on a string name) never mint the
-  # crash-kill / near-equivalent mutants there.
-  @impl Mutare.Mutator
-  @spec argument_marks(term()) :: [{module(), atom(), arity(), [non_neg_integer()], atom()}]
-  def argument_marks(_config) do
+  # computes with. Route them `:raw` so no core family (`AtomLiteral` on `:handle_event`,
+  # `StringLiteral` on a string name) ever mints the crash-kill / near-equivalent mutants there.
+  # The socket (index 0) and the hook function (index 3) stay ordinary expressions; the routed
+  # call is still offered whole to `mutate/2`, which is how this family removes it.
+  @impl Mutare.CallRouting
+  @spec call_routes() :: [Mutare.CallRouting.route()]
+  def call_routes do
     [
-      {Phoenix.LiveView, :attach_hook, 4, [1, 2], Mutator.structural_label()},
-      {Phoenix.LiveView, :detach_hook, 3, [1, 2], Mutator.structural_label()}
+      {Phoenix.LiveView, :attach_hook, 4, [:expression, :raw, :raw, :expression]},
+      {Phoenix.LiveView, :detach_hook, 3, [:expression, :raw, :raw]}
     ]
   end
 

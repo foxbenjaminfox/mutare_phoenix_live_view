@@ -18,13 +18,14 @@ defmodule Mutare.Phoenix.LiveView.Navigation do
   Matches direct (`Phoenix.LiveView.push_navigate(...)`), aliased, and bare-imported
   (`use`-injected) calls. Silence a site with `# mutare:ignore[lv_nav]`.
 
-  Also registers the LiveView compile-time DSL as `:skip` — the `Phoenix.LiveView.Router`
+  Also routes the LiveView compile-time DSL `:skip` — the `Phoenix.LiveView.Router`
   route declarations (`live`/`live_session`), `on_mount` hook declarations, and
   `Phoenix.Component`'s declarative assigns and template embedding (`attr`/`slot`/
-  `embed_templates`) — so Mutare leaves those compile-time declarations unmutated.
+  `embed_templates`) — so each of those calls is an inert leaf: Mutare neither descends into
+  the declaration nor rewrites the call.
   """
   @behaviour Mutare.Mutator
-  @behaviour Mutare.MacroRouting
+  @behaviour Mutare.CallRouting
 
   alias Mutare.Calls
   alias Mutare.Mutator
@@ -33,7 +34,8 @@ defmodule Mutare.Phoenix.LiveView.Navigation do
   # written form with a new function name and argument list.
   @typep rebuild :: (atom(), [Macro.t()] -> Macro.t())
 
-  # The LiveView compile-time DSL, registered `:skip` so core leaves the declarations raw.
+  # The LiveView compile-time DSL, routed `:skip` (call-level: an inert leaf, nothing offered or
+  # descended).
   # `:any` arity covers every written form (`live/2..4`, `live_session/2..3`, `attr/2..3`, …).
   @dsl_skips [
     # Route declarations (`import Phoenix.LiveView.Router` in the consumer's router).
@@ -57,9 +59,9 @@ defmodule Mutare.Phoenix.LiveView.Navigation do
   # mutant 0, so mutations inside them can never activate under Mutare's compile-once model.
   # Skipping the DSL keeps core from wasting mutant ids on it. LiveView *callback* bodies are
   # ordinary runtime code and are still mutated.
-  @impl Mutare.MacroRouting
-  @spec macro_routes() :: [Mutare.MacroRouting.route()]
-  def macro_routes, do: for({module, name} <- @dsl_skips, do: {module, name, :any, :skip})
+  @impl Mutare.CallRouting
+  @spec call_routes() :: [Mutare.CallRouting.route()]
+  def call_routes, do: for({module, name} <- @dsl_skips, do: {module, name, :any, :skip})
 
   # Never fires node-locally: the arity guard needs pipe context — a piped
   # `s |> push_navigate(to: p)` writes one arg but is effectively arity 2.

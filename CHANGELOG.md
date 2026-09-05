@@ -36,9 +36,9 @@ Initial release.
 - `Mutare.Phoenix.LiveView.Hook` (`:lv_hook`) — removes `attach_hook/4`
   (`attach` — the hook never runs) and `detach_hook/3` (`detach` — the hook
   keeps running), collapsing to the socket. Hook name and stage atoms are
-  pinned against core's value families.
+  routed `:raw`, so no core family mutates them.
 - Registers the LiveView compile-time DSL (`live`/`live_session`, `on_mount`,
-  `attr`/`slot`/`embed_templates`) as `:skip` through `Mutare.MacroRouting`,
+  `attr`/`slot`/`embed_templates`) as `:skip` through `Mutare.CallRouting`,
   so declarations that run once as mutant 0 are left unmutated.
 - `Mutare.Phoenix.LiveView.all/0` for splicing the six families into a
   `:mutators` list, composing with `Mutare.Phoenix.all/0`.

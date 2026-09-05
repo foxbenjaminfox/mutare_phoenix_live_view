@@ -3,7 +3,7 @@ defmodule Mutare.Phoenix.LiveView.HookTest do
   `:lv_hook` — removes a lifecycle-hook management call, pipe-aware: non-piped → the socket,
   piped → `Function.identity()`. Two variant-labelled kinds: `attach` (`attach_hook/4` — the
   hook never runs) and `detach` (`detach_hook/3` — the hook keeps running). The hook name and
-  stage arguments are pinned with the shared `:structural` mark, so core's value families
+  stage arguments are routed `:raw`, so core's value families
   leave those identifiers alone. Matches direct, aliased, and bare-imported (`use`-style)
   forms.
   """
@@ -74,7 +74,7 @@ defmodule Mutare.Phoenix.LiveView.HookTest do
     end
   end
 
-  describe "the structural mark on hook name and stage" do
+  describe "the :raw routes on hook name and stage" do
     test "core's AtomLiteral leaves the name and stage atoms alone when this family is enabled" do
       source = live("  def go(s), do: attach_hook(s, :log, :handle_event, &h/3)")
 
