@@ -26,6 +26,8 @@ mutare_phoenix_live_view-*.tar
 /examples/*/_build/
 /examples/*/deps/
 /examples/*/cover/
+# A Mutare sandbox pointed at an example (`--sandbox examples/.<name>_sandbox`).
+/examples/.*_sandbox/
 
 # Dialyzer PLT files (regenerated from deps; cache the directory in CI instead).
 /priv/plts/*.plt

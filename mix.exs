@@ -28,14 +28,10 @@ defmodule Mutare.Phoenix.LiveView.MixProject do
   defp elixirc_paths(_), do: ["lib"]
 
   defp description do
-    "Custom Mutare mutators for the Phoenix LiveView surface — " <>
-      "socket navigation, reply tuples, streams, pushed events, and component updates."
+    "Mutare mutators for Phoenix LiveView"
   end
 
-  # Hex package metadata. The `mutare_phoenix` base package (and through it the
-  # `mutare` core) is still a `path:` dependency, so an actual `mix hex.publish`
-  # stays blocked until both ship to Hex — this section keeps the manifest ready
-  # for that day. Only runtime and doc artifacts ship — never the test suite,
+  # Hex package metadata. Only runtime and doc artifacts ship — never the test suite,
   # fixtures, or the examples app.
   defp package do
     [
@@ -52,12 +48,16 @@ defmodule Mutare.Phoenix.LiveView.MixProject do
 
   defp deps do
     [
+      # The host mutation-testing engine, declared directly: the families here implement
+      # `Mutare.Mutator` and call its extension points (`Mutare.Calls`, `Mutare.AST`)
+      # themselves, so the dependency is this package's own, not an accident of what
+      # `mutare_phoenix` happens to pull in.
+      {:mutare, "~> 0.1"},
       # The companion base package — this one **builds on** it: it depends on it and
       # composes its preset (`Mutare.Phoenix.all/0`) with the LiveView families on top
-      # (mirroring how `phoenix_live_view` depends on `phoenix`). `mutare` itself arrives
-      # transitively through it. Path deps for local development until both are published;
-      # a consuming project lists both as `:dev`/`:test` deps.
-      {:mutare_phoenix, path: "../mutare_phoenix"},
+      # (mirroring how `phoenix_live_view` depends on `phoenix`). A consuming project
+      # lists `mutare` and this package as `:dev`/`:test` deps.
+      {:mutare_phoenix, "~> 0.1"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
