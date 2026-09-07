@@ -11,7 +11,7 @@ Read `README.md` first — it documents each family, the mutation it makes, and 
 ## Commands
 
 ```sh
-mix deps.get                       # fetch deps (mutare, mutare_plug, and mutare_phoenix are local path deps)
+mix deps.get                       # fetch deps (mutare, mutare_plug, and mutare_phoenix come from Hex)
 mix compile
 mix test                           # full suite (all async)
 mix test test/mutare/phoenix/live_view/navigation_test.exs        # one file
@@ -43,7 +43,7 @@ Each family is `@behaviour Mutare.Mutator`. Key callbacks and how they're used h
 - `name/0` — the family's recorded atom (`:lv_nav`, `:lv_reply`, `:lv_stream`, `:lv_event`, `:lv_send_update`, `:lv_hook`).
 - `mutate/1` (node-local) vs `mutate/2` (with context). **Most families return `:skip` from `mutate/1`** and do their real work in `mutate/2`, because the decision needs `context.pipe_mode` to recover *effective arity*: a piped `s |> push_navigate(to: p)` writes one arg but is arity 2.
 - `return_replacements/2` (structural hook) — `Reply` uses this instead of call resolution. It is gated on the enclosing module's `context.behaviours` (must implement `Phoenix.LiveView` or `Phoenix.LiveComponent`).
-- `macro_routes/0` — lives on the separate `Mutare.MacroRouting` behaviour, which a mutator may also implement (listing it under `:mutators` auto-registers its routes). `Navigation` declares it defensively: the LiveView compile-time DSL — `live`/`live_session` (`Phoenix.LiveView.Router`), `on_mount`, and `Phoenix.Component`'s `attr`/`slot`/`embed_templates` — is registered `:skip`, because those declarations run once as mutant 0 under Mutare's compile-once model, so mutations inside them can never activate (they'd be uninformative survivors). LiveView *callback* bodies are ordinary runtime code and are still mutated.
+- `call_routes/0` — lives on the separate `Mutare.CallRouting` behaviour, which a mutator may also implement (listing it under `:mutators` auto-registers its routes). `Navigation` declares it defensively: the LiveView compile-time DSL — `live`/`live_session` (`Phoenix.LiveView.Router`), `on_mount`, and `Phoenix.Component`'s `attr`/`slot`/`embed_templates` — is registered `:skip`, because those declarations run once as mutant 0 under Mutare's compile-once model, so mutations inside them can never activate (they'd be uninformative survivors). LiveView *callback* bodies are ordinary runtime code and are still mutated.
 - `variants/0` + `Mutare.Mutator.Mutation.tagged/2` — the families that produce more than one *kind* tag each mutation at production (`Stream`: `swap`/`at`/`limit`; `SendUpdate`: `remove`/`immediate`; `Hook`: `attach`/`detach`), so a qualified `# mutare:ignore[lv_stream:at]` suppresses one kind. Labels are public API; the family's moduledoc documents its vocabulary.
 - `argument_marks/1` — two families pin argument positions against core's value families: `SendUpdate` marks `send_update_after`'s delay with the shared `:timeout` label (core `IntegerLiteral`/`AtomLiteral` react — the `immediate` kind owns the timing question wholesale), and `Hook` marks the hook name/stage with `Mutare.Mutator.structural_label()` (every `:skip_arguments`-honouring value family declines there).
 
@@ -69,7 +69,7 @@ Engine helpers the families call (from `../mutare`):
   - `node_mutations(snippet, Mutator, pipe_mode \\ :unpiped)` — pure-AST node path; only *qualified* calls resolve, no transform pre-pass. Tightest unit of `mutate/1`·`mutate/2`.
   - `diffs_for(source, [Mutators], :family_name)` — drives the **real** `Mutare.transform_string/2` (alias/import/pipe resolution + equivalent-sibling suppression), isolating one family's `{original, mutated}` pairs. This is the main assertion style.
   - `assert_metamutant_compiles(source, [Mutators])` — the compile safety net; `source` must be a complete `defmodule`.
-- `test/support/live_view_stubs.ex` defines minimal stand-in `Phoenix.LiveView` / `Phoenix.LiveComponent` modules, loaded **only in `:test`** via `elixirc_paths(:test)`. They exist so the suite can (a) resolve bare-imported calls — `Mutare.Transform.Imports` reflects on real exported arities, so the stubs must export `push_navigate/2`, `stream_insert/3` **and** `/4`, etc.; and (b) surface a `use`-injected `@behaviour` for the `:lv_reply` gate. If you add a mutated function/arity, add it to these stubs. Empty `Phoenix.LiveView.Router` / `Phoenix.Component` stand-ins are the module-key targets for `Navigation.macro_routes/0` — purely syntactic, no DSL macros needed.
+- `test/support/live_view_stubs.ex` defines minimal stand-in `Phoenix.LiveView` / `Phoenix.LiveComponent` modules, loaded **only in `:test`** via `elixirc_paths(:test)`. They exist so the suite can (a) resolve bare-imported calls — `Mutare.Transform.Imports` reflects on real exported arities, so the stubs must export `push_navigate/2`, `stream_insert/3` **and** `/4`, etc.; and (b) surface a `use`-injected `@behaviour` for the `:lv_reply` gate. If you add a mutated function/arity, add it to these stubs. Empty `Phoenix.LiveView.Router` / `Phoenix.Component` stand-ins are the module-key targets for `Navigation.call_routes/0` — purely syntactic, no DSL macros needed.
 - One test file per family, plus `live_view_test.exs` for `all/0`.
 
 ## Scope boundaries
