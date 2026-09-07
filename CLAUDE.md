@@ -11,7 +11,7 @@ Read `README.md` first — it documents each family, the mutation it makes, and 
 ## Commands
 
 ```sh
-mix deps.get                       # fetch deps (mutare, mutare_plug, and mutare_phoenix come from Hex)
+mix deps.get                       # fetch deps
 mix compile
 mix test                           # full suite (all async)
 mix test test/mutare/phoenix/live_view/navigation_test.exs        # one file
